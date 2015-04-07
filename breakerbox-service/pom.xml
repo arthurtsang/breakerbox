@@ -59,6 +59,11 @@
             <groupId>com.netflix.turbine</groupId>
             <artifactId>turbine-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>de.thomaskrille.dropwizard</groupId>
+            <artifactId>dropwizard-environment-configuration</artifactId>
+            <version>1.1</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -99,4 +104,68 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>docker</id>
+            <activation>
+                <property>
+                    <name>maven_docker</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.wouterdanes.docker</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <version>3.0</version>
+                        <configuration>
+                            <images>
+                                <image>
+                                    <id>search</id>
+                                    <dockerFile>${project.basedir}/Dockerfile</dockerFile>
+                                    <keep>true</keep>
+                                    <nameAndTag>${project.name}:${project.version}</nameAndTag>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${project.basedir}/breakerbox.yml</file>
+                                            <dest>breakerbox.yml</dest>
+                                        </artifact>
+                                        <artifact>
+                                            <file>${project.basedir}/config.properties</file>
+                                            <dest>config.properties</dest>
+                                        </artifact>
+                                        <artifact>
+                                            <file>${project.build.directory}/${project.build.finalName}.jar</file>
+                                            <dest>target/${project.build.finalName}.jar</dest>
+                                        </artifact>
+                                    </artifacts>
+                                </image>
+                            </images>
+                            <containers>
+                                <container>
+                                    <image>${project.name}:${project.version}</image>
+                                </container>
+                            </containers>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>build</id>
+                                <goals>
+                                    <goal>build-images</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>push</id>
+                                <goals>
+                                    <goal>push-images</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

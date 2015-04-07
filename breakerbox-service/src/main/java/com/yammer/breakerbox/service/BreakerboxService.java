@@ -38,6 +38,7 @@ import com.yammer.tenacity.core.properties.TenacityPropertyKey;
 import com.yammer.tenacity.core.properties.TenacityPropertyKeyFactory;
 import com.yammer.tenacity.dbi.DBIExceptionLogger;
 import com.yammer.tenacity.dbi.SQLExceptionLogger;
+import de.thomaskrille.dropwizard.environment_configuration.EnvironmentConfigurationFactoryFactory;
 import io.dropwizard.Application;
 import io.dropwizard.auth.CachingAuthenticator;
 import io.dropwizard.auth.basic.BasicAuthProvider;
@@ -66,6 +67,8 @@ public class BreakerboxService extends Application<BreakerboxServiceConfiguratio
 
     @Override
     public void initialize(Bootstrap<BreakerboxServiceConfiguration> bootstrap) {
+        bootstrap.setConfigurationFactoryFactory(new EnvironmentConfigurationFactoryFactory());
+
         bootstrap.addBundle(new DBIExceptionsBundle());
         bootstrap.addBundle(new MigrationsBundle<BreakerboxServiceConfiguration>() {
             @Override
@@ -75,31 +78,31 @@ public class BreakerboxService extends Application<BreakerboxServiceConfiguratio
         });
 
         tenacityConfiguredBundle = ((DelayedTenacityBundleBuilder)DelayedTenacityBundleBuilder
-            .newBuilder()
-            .configurationFactory(new TenacityBundleConfigurationFactory<BreakerboxServiceConfiguration>() {
-                @Override
-                public Map<TenacityPropertyKey, TenacityConfiguration> getTenacityConfigurations(BreakerboxServiceConfiguration applicationConfiguration) {
-                    return ImmutableMap.<TenacityPropertyKey, TenacityConfiguration>of(
-                            BreakerboxDependencyKey.BRKRBX_SERVICES_PROPERTYKEYS, applicationConfiguration.getBreakerboxServicesPropertyKeys(),
-                            BreakerboxDependencyKey.BRKRBX_SERVICES_CONFIGURATION, applicationConfiguration.getBreakerboxServicesConfiguration(),
-                            BreakerboxDependencyKey.BRKRBX_LDAP_AUTH, new TenacityConfiguration());
-                }
+                .newBuilder()
+                .configurationFactory(new TenacityBundleConfigurationFactory<BreakerboxServiceConfiguration>() {
+                    @Override
+                    public Map<TenacityPropertyKey, TenacityConfiguration> getTenacityConfigurations(BreakerboxServiceConfiguration applicationConfiguration) {
+                        return ImmutableMap.<TenacityPropertyKey, TenacityConfiguration>of(
+                                BreakerboxDependencyKey.BRKRBX_SERVICES_PROPERTYKEYS, applicationConfiguration.getBreakerboxServicesPropertyKeys(),
+                                BreakerboxDependencyKey.BRKRBX_SERVICES_CONFIGURATION, applicationConfiguration.getBreakerboxServicesConfiguration(),
+                                BreakerboxDependencyKey.BRKRBX_LDAP_AUTH, new TenacityConfiguration());
+                    }
 
-                @Override
-                public TenacityPropertyKeyFactory getTenacityPropertyKeyFactory(BreakerboxServiceConfiguration applicationConfiguration) {
-                    return new BreakerboxDependencyKeyFactory();
-                }
+                    @Override
+                    public TenacityPropertyKeyFactory getTenacityPropertyKeyFactory(BreakerboxServiceConfiguration applicationConfiguration) {
+                        return new BreakerboxDependencyKeyFactory();
+                    }
 
-                @Override
-                public BreakerboxConfiguration getBreakerboxConfiguration(BreakerboxServiceConfiguration applicationConfiguration) {
-                    return applicationConfiguration.getBreakerboxConfiguration();
+                    @Override
+                    public BreakerboxConfiguration getBreakerboxConfiguration(BreakerboxServiceConfiguration applicationConfiguration) {
+                        return applicationConfiguration.getBreakerboxConfiguration();
                 }
-            })
-            .mapAllHystrixRuntimeExceptionsTo(429)
-            .commandExecutionHook(new ExceptionLoggingCommandHook(
-                    ImmutableList.of(
-                            new DBIExceptionLogger(bootstrap.getMetricRegistry()),
-                            new SQLExceptionLogger(bootstrap.getMetricRegistry()),
+                })
+                .mapAllHystrixRuntimeExceptionsTo(429)
+                .commandExecutionHook(new ExceptionLoggingCommandHook(
+                        ImmutableList.of(
+                                new DBIExceptionLogger(bootstrap.getMetricRegistry()),
+                                new SQLExceptionLogger(bootstrap.getMetricRegistry()),
                             new DefaultExceptionLogger()))))
             .build();
         bootstrap.addBundle(tenacityConfiguredBundle);

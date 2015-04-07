@@ -1,0 +1,9 @@
+#!/bin/bash
+
+docker kill breakerbox >/dev/null 2>&1
+docker rm breakerbox >/dev/null 2>&1
+docker run -d --name=breakerbox \
+	-p 7080:8080 \
+	-p 7081:8081 \
+	-v /home/arthur/hp/idol/breakerbox/config:/opt/breakerbox/config \
+	breakerbox
